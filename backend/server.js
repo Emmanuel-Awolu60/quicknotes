@@ -1,25 +1,27 @@
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
+const { connectDB } = require("./config/db"); // 👈 import connectDB
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// CORS config: only allow our frontend origin (safer than '*')
+// Connect to PostgreSQL
+connectDB(); // 👈 test connection when server starts
+
+// CORS config
 const corsOptions = {
   origin: process.env.FRONTEND_ORIGIN || "http://localhost:3000",
   optionsSuccessStatus: 200,
 };
 
-app.use(cors(corsOptions)); // enable CORS
-app.use(express.json()); // parse JSON bodies
+app.use(cors(corsOptions));
+app.use(express.json());
 
-// Basic health route
 app.get("/", (req, res) => {
-  res.json({ message: "QuickNotes backend running" });
+  res.json({ message: "QuickNotes backend running with PostgreSQL connected" });
 });
 
-// Placeholder for routes (we'll create these files next steps)
 app.use("/api/auth", (req, res) =>
   res.status(501).json({ msg: "Auth routes not implemented yet" })
 );
@@ -28,5 +30,5 @@ app.use("/api/notes", (req, res) =>
 );
 
 app.listen(PORT, () => {
-  console.log(`Server listening on port ${PORT}`);
+  console.log(`Server running on port ${PORT}`);
 });
