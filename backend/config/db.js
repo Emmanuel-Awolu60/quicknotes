@@ -1,20 +1,13 @@
-const { Pool } = require("pg");
-require("dotenv").config();
+import pkg from "pg";
+const { Pool } = pkg;
+import dotenv from "dotenv";
 
-// Create a new connection pool
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
+dotenv.config();
+
+export const pool = new Pool({
+  user: "quicknotes_user",
+  host: "localhost",
+  database: "quicknotes_db",
+  password: "password123",
+  port: 5432,
 });
-
-// Function to test connection
-const connectDB = async () => {
-  try {
-    await pool.connect();
-    console.log("✅ PostgreSQL connected successfully");
-  } catch (error) {
-    console.error("❌ Database connection failed:", error.message);
-    process.exit(1); // stop app if DB fails
-  }
-};
-
-module.exports = { pool, connectDB };
