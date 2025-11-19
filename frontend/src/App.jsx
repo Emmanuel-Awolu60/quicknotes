@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { Routes, Route } from "react-router-dom";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Dashboard from "./pages/Dashboard";
@@ -6,7 +6,6 @@ import PrivateRoute from "./components/PrivateRoute";
 
 export default function App() {
   return (
-    // <Router>
     <Routes>
       {/* Public Routes */}
       <Route path="/login" element={<Login />} />
@@ -14,14 +13,16 @@ export default function App() {
 
       {/* Private Routes */}
       <Route
-        path="/"
+        path="/dashboard"
         element={
           <PrivateRoute>
             <Dashboard />
           </PrivateRoute>
         }
       />
+
+      {/* Default redirect: if user hits "/" send to /dashboard */}
+      <Route path="/" element={<Login />} />
     </Routes>
-    // </Router>
   );
 }
