@@ -1,67 +1,68 @@
-import React, { useState } from "react";
-import { signupUser } from "../utils/api.js";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import API from "../utils/api";
 
-function Signup() {
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [message, setMessage] = useState("");
+export default function Signup() {
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    password: "",
+  });
+
+  const navigate = useNavigate();
+
+  const handleChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value,
+    });
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
     try {
-      const data = await signupUser({ name, email, password });
-      if (data?.error) {
-        setMessage(data.error);
-      } else {
-        setMessage("Signup successful! You can now login.");
-        setName("");
-        setEmail("");
-        setPassword("");
-      }
-    } catch (error) {
-      setMessage("Signup failed. Try again later.");
+      await API.post("/auth/register", formData);
+
+      alert("Signup successful! Please log in.");
+      navigate("/login");
+    } catch (err) {
+      console.error("Signup error:", err);
+      alert("Signup failed. Check your details.");
     }
   };
 
   return (
-    <div className="bg-white shadow-md rounded px-8 py-6">
-      <h2 className="text-2xl font-bold mb-4 text-center">Signup</h2>
-      {message && <p className="mb-2 text-center text-red-500">{message}</p>}
-      <form onSubmit={handleSubmit} className="space-y-4">
+    <div style={{ padding: "20px" }}>
+      <h2>Create Account</h2>
+
+      <form onSubmit={handleSubmit}>
         <input
           type="text"
-          placeholder="Name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          className="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+          name="name"
+          placeholder="Full Name"
+          onChange={handleChange}
           required
         />
+
         <input
           type="email"
+          name="email"
           placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+          onChange={handleChange}
           required
         />
+
         <input
           type="password"
+          name="password"
           placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+          onChange={handleChange}
           required
         />
-        <button
-          type="submit"
-          className="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600 transition"
-        >
-          Signup
-        </button>
+
+        <button type="submit">Signup</button>
       </form>
     </div>
   );
 }
-
-export default Signup;

@@ -1,33 +1,30 @@
-const BASE_URL = "http://localhost:5000/api/auth";
+import axios from "axios";
 
-export const signupUser = async (userData) => {
-  try {
-    const response = await fetch(`${BASE_URL}/signup`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(userData),
-    });
+const API = axios.create({
+  baseURL: "http://localhost:5000/api",
+});
 
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    console.error("Signup error:", error);
-    throw error;
+// Token helpers
+export function getToken() {
+  return localStorage.getItem("token");
+}
+
+export function setToken(token) {
+  localStorage.setItem("token", token);
+}
+
+export function clearToken() {
+  localStorage.removeItem("token");
+}
+
+// Attach token
+API.interceptors.request.use((config) => {
+  const token = getToken();
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
   }
-};
+  return config;
+});
 
-export const loginUser = async (userData) => {
-  try {
-    const response = await fetch(`${BASE_URL}/login`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(userData),
-    });
-
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    console.error("Login error:", error);
-    throw error;
-  }
-};
+// VERY IMPORTANT ✔️
+export default API;

@@ -1,59 +1,60 @@
-import React, { useState } from "react";
-import { loginUser } from "../utils/api.js";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import API, { setToken } from "../utils/api";
 
-function Login() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [message, setMessage] = useState("");
+export default function Login() {
+  const [formData, setFormData] = useState({
+    email: "",
+    password: "",
+  });
+
+  const navigate = useNavigate();
+
+  const handleChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value,
+    });
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
     try {
-      const data = await loginUser({ email, password });
-      if (data?.error) {
-        setMessage(data.error);
-      } else {
-        setMessage("Login successful!");
-        localStorage.setItem("token", data.token); // store JWT
-        setEmail("");
-        setPassword("");
-        // Later: navigate to dashboard
-      }
-    } catch (error) {
-      setMessage("Login failed. Try again later.");
+      const res = await API.post("/auth/login", formData);
+      setToken(res.data.token);
+
+      alert("Login successful!");
+      navigate("/dashboard");
+    } catch (err) {
+      console.error("Login error:", err);
+      alert("Login failed. Check your credentials.");
     }
   };
 
   return (
-    <div className="bg-white shadow-md rounded px-8 py-6">
-      <h2 className="text-2xl font-bold mb-4 text-center">Login</h2>
-      {message && <p className="mb-2 text-center text-red-500">{message}</p>}
-      <form onSubmit={handleSubmit} className="space-y-4">
+    <div style={{ padding: "20px" }}>
+      <h2>Login</h2>
+
+      <form onSubmit={handleSubmit}>
         <input
           type="email"
+          name="email"
           placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+          onChange={handleChange}
           required
         />
+
         <input
           type="password"
+          name="password"
           placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+          onChange={handleChange}
           required
         />
-        <button
-          type="submit"
-          className="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600 transition"
-        >
-          Login
-        </button>
+
+        <button type="submit">Login</button>
       </form>
     </div>
   );
 }
-
-export default Login;
