@@ -7,7 +7,7 @@ import Dashboard from "./pages/Dashboard.jsx";
 function App() {
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center">
-      <header className="mb-8">
+      {/* <header className="mb-8">
         <h1 className="text-4xl font-bold text-blue-600">QuickNotes</h1>
         <nav className="mt-2 space-x-4">
           <Link className="text-blue-500 hover:underline" to="/login">
@@ -17,7 +17,7 @@ function App() {
             Signup
           </Link>
         </nav>
-      </header>
+      </header> */}
 
       <main className="w-full max-w-md px-6">
         <Routes>
