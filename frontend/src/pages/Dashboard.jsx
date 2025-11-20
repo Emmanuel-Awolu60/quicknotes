@@ -6,21 +6,20 @@ import { useNavigate } from "react-router-dom";
 export default function Dashboard() {
   const [notes, setNotes] = useState([]);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
-  // Create Note Modal
-  const [showModal, setShowModal] = useState(false);
+  // Create note modal
+  const [showCreateModal, setShowCreateModal] = useState(false);
   const [newTitle, setNewTitle] = useState("");
   const [newContent, setNewContent] = useState("");
 
-  // Edit Note Modal
-  const [editModal, setEditModal] = useState(false);
-  const [editId, setEditId] = useState(null);
+  // Edit note modal
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingNoteId, setEditingNoteId] = useState(null);
   const [editTitle, setEditTitle] = useState("");
   const [editContent, setEditContent] = useState("");
 
-  const navigate = useNavigate();
-
-  // Fetch all notes
+  // Fetch notes on page load
   useEffect(() => {
     const fetchNotes = async () => {
       try {
@@ -40,22 +39,19 @@ export default function Dashboard() {
     navigate("/login");
   };
 
-  // CREATE NOTE
+  // Create note
   const handleCreateNote = async () => {
     if (!newTitle.trim() || !newContent.trim()) {
       alert("Please enter title and content");
       return;
     }
-
     try {
       const res = await API.post("/notes", {
         title: newTitle,
         content: newContent,
       });
-
       setNotes([res.data.note, ...notes]);
-
-      setShowModal(false);
+      setShowCreateModal(false);
       setNewTitle("");
       setNewContent("");
     } catch (error) {
@@ -63,37 +59,43 @@ export default function Dashboard() {
     }
   };
 
-  // OPEN EDIT MODAL
-  const openEditModal = (note) => {
-    setEditId(note.id);
+  // Start editing a note
+  const startEditNote = (note) => {
+    setEditingNoteId(note.id);
     setEditTitle(note.title);
     setEditContent(note.content);
-    setEditModal(true);
+    setShowEditModal(true);
   };
 
-  // UPDATE NOTE
-  const handleUpdateNote = async () => {
+  // Save edited note
+  const handleEditNote = async () => {
+    if (!editTitle.trim() || !editContent.trim()) {
+      alert("Please enter title and content");
+      return;
+    }
     try {
-      const res = await API.put(`/notes/${editId}`, {
+      const res = await API.put(`/notes/${editingNoteId}`, {
         title: editTitle,
         content: editContent,
       });
-
-      setNotes(notes.map((n) => (n.id === editId ? res.data.note : n)));
-
-      setEditModal(false);
+      setNotes(
+        notes.map((note) => (note.id === editingNoteId ? res.data.note : note))
+      );
+      setShowEditModal(false);
+      setEditingNoteId(null);
+      setEditTitle("");
+      setEditContent("");
     } catch (error) {
-      console.error("Error updating note:", error);
+      console.error("Error editing note:", error);
     }
   };
 
-  // DELETE NOTE
-  const handleDelete = async (id) => {
-    if (!confirm("Delete this note?")) return;
-
+  // Delete note
+  const handleDeleteNote = async (id) => {
+    if (!confirm("Are you sure you want to delete this note?")) return;
     try {
       await API.delete(`/notes/${id}`);
-      setNotes(notes.filter((n) => n.id !== id));
+      setNotes(notes.filter((note) => note.id !== id));
     } catch (error) {
       console.error("Error deleting note:", error);
     }
@@ -116,7 +118,7 @@ export default function Dashboard() {
       <div className="mb-4">
         <button
           className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
-          onClick={() => setShowModal(true)}
+          onClick={() => setShowCreateModal(true)}
         >
           + Add Note
         </button>
@@ -125,7 +127,6 @@ export default function Dashboard() {
       {/* NOTES LIST */}
       <div className="bg-white p-6 rounded-md shadow-md">
         <h2 className="text-xl font-semibold mb-4">Your Notes</h2>
-
         {loading ? (
           <p>Loading notes...</p>
         ) : notes.length === 0 ? (
@@ -135,36 +136,26 @@ export default function Dashboard() {
             {notes.map((note) => (
               <div
                 key={note.id}
-                className="p-4 border rounded-md shadow-sm bg-gray-50 hover:bg-gray-200"
+                className="p-4 border rounded-md shadow-sm bg-gray-50 hover:bg-gray-200 relative"
               >
-                <h3
-                  className="font-bold text-lg cursor-pointer"
-                  onClick={() => navigate(`/note/${note.id}`)}
-                >
-                  {note.title}
-                </h3>
-
-                <p
-                  className="text-gray-700 mt-2 cursor-pointer"
-                  onClick={() => navigate(`/note/${note.id}`)}
-                >
+                <h3 className="font-bold text-lg">{note.title}</h3>
+                <p className="text-gray-700 mt-2">
                   {note.content.length > 80
                     ? note.content.slice(0, 80) + "..."
                     : note.content}
                 </p>
 
-                {/* Edit + Delete */}
-                <div className="flex justify-end mt-3 gap-3">
+                {/* Edit & Delete buttons */}
+                <div className="absolute top-2 right-2 flex gap-2 opacity-0 hover:opacity-100 transition">
                   <button
-                    className="text-blue-600"
-                    onClick={() => openEditModal(note)}
+                    className="px-2 py-1 bg-yellow-400 rounded text-white text-sm hover:bg-yellow-500"
+                    onClick={() => startEditNote(note)}
                   >
                     Edit
                   </button>
-
                   <button
-                    className="text-red-600"
-                    onClick={() => handleDelete(note.id)}
+                    className="px-2 py-1 bg-red-500 rounded text-white text-sm hover:bg-red-600"
+                    onClick={() => handleDeleteNote(note.id)}
                   >
                     Delete
                   </button>
@@ -176,11 +167,10 @@ export default function Dashboard() {
       </div>
 
       {/* CREATE NOTE MODAL */}
-      {showModal && (
+      {showCreateModal && (
         <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center">
           <div className="bg-white p-6 rounded-lg w-96 shadow-lg">
             <h2 className="text-xl font-bold mb-4">Create Note</h2>
-
             <input
               type="text"
               placeholder="Title"
@@ -188,22 +178,19 @@ export default function Dashboard() {
               onChange={(e) => setNewTitle(e.target.value)}
               className="w-full p-2 border rounded mb-3"
             />
-
             <textarea
               placeholder="Write your note..."
               value={newContent}
               onChange={(e) => setNewContent(e.target.value)}
               className="w-full p-2 border rounded mb-3 h-32"
-            ></textarea>
-
+            />
             <div className="flex justify-end gap-3">
               <button
                 className="px-4 py-2 bg-gray-300 rounded"
-                onClick={() => setShowModal(false)}
+                onClick={() => setShowCreateModal(false)}
               >
                 Cancel
               </button>
-
               <button
                 className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
                 onClick={handleCreateNote}
@@ -216,37 +203,35 @@ export default function Dashboard() {
       )}
 
       {/* EDIT NOTE MODAL */}
-      {editModal && (
+      {showEditModal && (
         <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center">
           <div className="bg-white p-6 rounded-lg w-96 shadow-lg">
             <h2 className="text-xl font-bold mb-4">Edit Note</h2>
-
             <input
               type="text"
+              placeholder="Title"
               value={editTitle}
               onChange={(e) => setEditTitle(e.target.value)}
               className="w-full p-2 border rounded mb-3"
             />
-
             <textarea
+              placeholder="Write your note..."
               value={editContent}
               onChange={(e) => setEditContent(e.target.value)}
               className="w-full p-2 border rounded mb-3 h-32"
-            ></textarea>
-
+            />
             <div className="flex justify-end gap-3">
               <button
                 className="px-4 py-2 bg-gray-300 rounded"
-                onClick={() => setEditModal(false)}
+                onClick={() => setShowEditModal(false)}
               >
                 Cancel
               </button>
-
               <button
-                className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
-                onClick={handleUpdateNote}
+                className="px-4 py-2 bg-yellow-400 text-white rounded hover:bg-yellow-500"
+                onClick={handleEditNote}
               >
-                Update
+                Save
               </button>
             </div>
           </div>
