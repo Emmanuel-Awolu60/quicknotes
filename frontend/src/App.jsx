@@ -1,8 +1,9 @@
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Dashboard from "./pages/Dashboard";
 import PrivateRoute from "./components/PrivateRoute";
+import NoteView from "./pages/NoteView";
 
 export default function App() {
   return (
@@ -21,8 +22,17 @@ export default function App() {
         }
       />
 
-      {/* Default redirect: if user hits "/" send to /dashboard */}
-      <Route path="/" element={<Login />} />
+      <Route
+        path="/note/:id"
+        element={
+          <PrivateRoute>
+            <NoteView />
+          </PrivateRoute>
+        }
+      />
+
+      {/* Default redirect */}
+      <Route path="/" element={<Navigate to="/dashboard" replace />} />
     </Routes>
   );
 }
