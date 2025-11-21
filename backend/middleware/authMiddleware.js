@@ -1,33 +1,22 @@
 import jwt from "jsonwebtoken";
-import { pool } from "../config/db.js";
 
-export const protect = async (req, res, next) => {
-  const authHeader = req.headers.authorization;
+export function authenticateToken(req, res, next) {
+  const authHeader = req.headers["authorization"];
+  const token = authHeader && authHeader.split(" ")[1];
 
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return res.status(401).json({ message: "Not authorized, no token" });
+  console.log("Received token:", token);
+
+  if (!token) {
+    return res.status(401).json({ message: "No token provided" });
   }
 
-  const token = authHeader.split(" ")[1];
-  console.log("Received token:", token); // ✅ log token
-
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    console.log("Decoded token:", decoded); // ✅ log decoded info
-
-    const userResult = await pool.query(
-      "SELECT id, name, email FROM users WHERE id = $1",
-      [decoded.id]
-    );
-
-    if (userResult.rows.length === 0) {
-      return res.status(401).json({ message: "User not found" });
+  jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+    if (err) {
+      console.error("Auth error:", err);
+      return res.status(403).json({ message: "Invalid token" });
     }
 
-    req.user = userResult.rows[0];
+    req.user = user; // { id: userId }
     next();
-  } catch (error) {
-    console.error("Auth error:", error.message);
-    res.status(401).json({ message: "Token failed or expired" });
-  }
-};
+  });
+}

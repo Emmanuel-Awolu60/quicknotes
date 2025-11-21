@@ -1,34 +1,60 @@
 import { pool } from "../config/db.js";
 
-// ✅ Create a note
+// ✅ Create a new note
 export const createNote = async (req, res) => {
   const { title, content } = req.body;
+  const userId = req.user.id; // from authenticateToken middleware
 
   try {
     const result = await pool.query(
-      "INSERT INTO notes (user_id, title, content) VALUES ($1, $2, $3) RETURNING *",
-      [req.user.id, title, content]
+      `INSERT INTO notes (user_id, title, content)
+       VALUES ($1, $2, $3)
+       RETURNING *`,
+      [userId, title, content]
     );
-    res
-      .status(201)
-      .json({ message: "Note created successfully", note: result.rows[0] });
-  } catch (error) {
-    console.error("Error creating note:", error.message);
-    res.status(500).json({ message: "Server error while creating note" });
+
+    res.status(201).json({ note: result.rows[0] });
+  } catch (err) {
+    console.error("Error creating note:", err);
+    res.status(500).json({ message: "Server error" });
   }
 };
 
 // ✅ Get all notes for logged-in user
 export const getNotes = async (req, res) => {
+  const userId = req.user.id;
+
   try {
     const result = await pool.query(
-      "SELECT * FROM notes WHERE user_id = $1 ORDER BY id DESC",
-      [req.user.id]
+      `SELECT * FROM notes WHERE user_id = $1 ORDER BY created_at DESC`,
+      [userId]
     );
-    res.json(result.rows);
-  } catch (error) {
-    console.error("Error fetching notes:", error.message);
-    res.status(500).json({ message: "Server error while fetching notes" });
+
+    res.json({ notes: result.rows });
+  } catch (err) {
+    console.error("Error fetching notes:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+// ✅ Get a single note by ID
+export const getNoteById = async (req, res) => {
+  const { id } = req.params;
+  const userId = req.user.id;
+
+  try {
+    const result = await pool.query(
+      `SELECT * FROM notes WHERE id = $1 AND user_id = $2`,
+      [id, userId]
+    );
+
+    if (result.rows.length === 0)
+      return res.status(404).json({ message: "Note not found" });
+
+    res.json({ note: result.rows[0] });
+  } catch (err) {
+    console.error("Error fetching note:", err);
+    res.status(500).json({ message: "Server error" });
   }
 };
 
@@ -36,39 +62,48 @@ export const getNotes = async (req, res) => {
 export const updateNote = async (req, res) => {
   const { id } = req.params;
   const { title, content } = req.body;
+  const userId = req.user.id;
 
   try {
     const result = await pool.query(
-      "UPDATE notes SET title = $1, content = $2 WHERE id = $3 AND user_id = $4 RETURNING *",
-      [title, content, id, req.user.id]
+      `UPDATE notes
+       SET title = $1, content = $2
+       WHERE id = $3 AND user_id = $4
+       RETURNING *`,
+      [title, content, id, userId]
     );
 
     if (result.rows.length === 0)
-      return res.status(404).json({ message: "Note not found or not yours" });
+      return res
+        .status(404)
+        .json({ message: "Note not found or not authorized" });
 
-    res.json({ message: "Note updated", note: result.rows[0] });
-  } catch (error) {
-    console.error("Error updating note:", error.message);
-    res.status(500).json({ message: "Server error while updating note" });
+    res.json({ note: result.rows[0] });
+  } catch (err) {
+    console.error("Error updating note:", err);
+    res.status(500).json({ message: "Server error" });
   }
 };
 
 // ✅ Delete a note
 export const deleteNote = async (req, res) => {
   const { id } = req.params;
+  const userId = req.user.id;
 
   try {
     const result = await pool.query(
-      "DELETE FROM notes WHERE id = $1 AND user_id = $2 RETURNING id",
-      [id, req.user.id]
+      `DELETE FROM notes WHERE id = $1 AND user_id = $2 RETURNING *`,
+      [id, userId]
     );
 
     if (result.rows.length === 0)
-      return res.status(404).json({ message: "Note not found or not yours" });
+      return res
+        .status(404)
+        .json({ message: "Note not found or not authorized" });
 
-    res.json({ message: "Note deleted" });
-  } catch (error) {
-    console.error("Error deleting note:", error.message);
-    res.status(500).json({ message: "Server error while deleting note" });
+    res.json({ message: "Note deleted successfully" });
+  } catch (err) {
+    console.error("Error deleting note:", err);
+    res.status(500).json({ message: "Server error" });
   }
 };
